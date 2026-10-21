@@ -230,3 +230,106 @@ func TestDashboardMaintenanceVisibilityContracts(t *testing.T) {
 		t.Errorf("expected sm.AllHosts to be true for 'all' hosts")
 	}
 }
+
+func TestDashboardBrandingPayloadAndResolution(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "uptimemon-api-branding-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	db, err := storage.Open(filepath.Join(tempDir, "uptime.db"))
+	if err != nil {
+		t.Fatalf("storage.Open failed: %v", err)
+	}
+	defer db.Close()
+
+	// 1. Test custom branding with icon slug resolution
+	cfgCustom := &config.RuntimeConfig{
+		Global: config.GlobalConfig{
+			SelfhstIconCDN: "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg",
+			Branding: config.BrandingConfig{
+				Title:    "Acme Status",
+				Subtitle: "Core Cloud Services",
+				Footer:   "© 2026 Acme Corp",
+				Icon:     "grafana",
+				Favicon:  "https://acme.corp/favicon.ico",
+				TabTitle: "Acme Live Status",
+			},
+		},
+		Zones:     map[string]config.Zone{},
+		Endpoints: map[string]config.Endpoint{},
+	}
+
+	resp, err := api.BuildDashboardResponse(cfgCustom, db, func(z, e string, t time.Time) bool { return false })
+	if err != nil {
+		t.Fatalf("BuildDashboardResponse failed: %v", err)
+	}
+
+	if resp.Branding.Title != "Acme Status" {
+		t.Errorf("expected Title 'Acme Status', got %q", resp.Branding.Title)
+	}
+	if resp.Branding.Subtitle != "Core Cloud Services" {
+		t.Errorf("expected Subtitle 'Core Cloud Services', got %q", resp.Branding.Subtitle)
+	}
+	if resp.Branding.Footer != "© 2026 Acme Corp" {
+		t.Errorf("expected Footer '© 2026 Acme Corp', got %q", resp.Branding.Footer)
+	}
+	if resp.Branding.Icon != "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/grafana.svg" {
+		t.Errorf("expected resolved Icon CDN URL, got %q", resp.Branding.Icon)
+	}
+	if resp.Branding.Favicon != "https://acme.corp/favicon.ico" {
+		t.Errorf("expected Favicon URL, got %q", resp.Branding.Favicon)
+	}
+	if resp.Branding.TabTitle != "Acme Live Status" {
+		t.Errorf("expected TabTitle 'Acme Live Status', got %q", resp.Branding.TabTitle)
+	}
+
+	// 2. Test empty branding fallback
+	cfgEmpty := &config.RuntimeConfig{
+		Global:    config.DefaultGlobalConfig(),
+		Zones:     map[string]config.Zone{},
+		Endpoints: map[string]config.Endpoint{},
+	}
+	// Clear branding fields to simulate uninitialized
+	cfgEmpty.Global.Branding = config.BrandingConfig{}
+
+	respDefault, err := api.BuildDashboardResponse(cfgEmpty, db, func(z, e string, t time.Time) bool { return false })
+	if err != nil {
+		t.Fatalf("BuildDashboardResponse failed: %v", err)
+	}
+
+	if respDefault.Branding.Title != "uptime-mon" {
+		t.Errorf("expected default Title 'uptime-mon', got %q", respDefault.Branding.Title)
+	}
+	if respDefault.Branding.Subtitle != "Continuous GitOps Uptime & Protocol Monitoring" {
+		t.Errorf("expected default Subtitle, got %q", respDefault.Branding.Subtitle)
+	}
+	if respDefault.Branding.Footer != "uptime-mon • Single-Binary Declarative Uptime Monitor" {
+		t.Errorf("expected default Footer, got %q", respDefault.Branding.Footer)
+	}
+	if respDefault.Branding.TabTitle != "uptime-mon | Status Dashboard" {
+		t.Errorf("expected default TabTitle 'uptime-mon | Status Dashboard', got %q", respDefault.Branding.TabTitle)
+	}
+
+	// 3. Assert full HTTP response endpoint JSON decoding
+	srv := api.NewServer(cfgEmpty, db, nil, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/dashboard", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rec.Code)
+	}
+
+	var httpResp api.PublicDashboardResponse
+	if err := json.NewDecoder(rec.Body).Decode(&httpResp); err != nil {
+		t.Fatalf("failed to decode JSON response: %v", err)
+	}
+	if httpResp.Branding.Title != "uptime-mon" {
+		t.Errorf("expected HTTP response branding.title = 'uptime-mon', got %q", httpResp.Branding.Title)
+	}
+	if httpResp.Branding.TabTitle != "uptime-mon | Status Dashboard" {
+		t.Errorf("expected HTTP response branding.tab_title = 'uptime-mon | Status Dashboard', got %q", httpResp.Branding.TabTitle)
+	}
+}

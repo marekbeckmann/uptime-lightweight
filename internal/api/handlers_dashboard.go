@@ -46,10 +46,20 @@ type ScheduledMaintenanceView struct {
 	AllHosts          bool                   `json:"all_hosts"`
 }
 
+type DashboardBrandingView struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Footer   string `json:"footer"`
+	Icon     string `json:"icon"`
+	Favicon  string `json:"favicon"`
+	TabTitle string `json:"tab_title"`
+}
+
 // PublicDashboardResponse is the top-level payload for GET /api/v1/dashboard
 type PublicDashboardResponse struct {
 	SystemStatus          string                     `json:"system_status"`
 	Counts                DashboardCounts            `json:"counts"`
+	Branding              DashboardBrandingView      `json:"branding"`
 	OneOffMaintenances    []OneOffMaintenanceView    `json:"one_off_maintenances"`
 	ScheduledMaintenances []ScheduledMaintenanceView `json:"scheduled_maintenances"`
 	MaintenanceBanners    []DashboardMaintenanceView `json:"maintenance_banners"` // Retained for backward compatibility
@@ -335,6 +345,48 @@ func BuildDashboardResponse(cfg *config.RuntimeConfig, db *storage.DB, isMaintFu
 
 	globalUptime, _ := db.CalculateGlobalUptimePercentage(24 * time.Hour)
 
+	// Build resolved branding
+	b := cfg.Global.Branding
+	title := b.Title
+	if title == "" {
+		title = "uptime-mon"
+	}
+	subtitle := b.Subtitle
+	if subtitle == "" {
+		subtitle = "Continuous GitOps Uptime & Protocol Monitoring"
+	}
+	footer := b.Footer
+	if footer == "" {
+		footer = "uptime-mon • Single-Binary Declarative Uptime Monitor"
+	}
+	tabTitle := b.TabTitle
+	if tabTitle == "" {
+		tabTitle = title + " | Status Dashboard"
+	}
+
+	icon := b.Icon
+	if icon != "" && !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") && !strings.HasPrefix(icon, "data:") {
+		cdnPattern := cfg.Global.SelfhstIconCDN
+		if cdnPattern == "" {
+			cdnPattern = "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg"
+		}
+		icon = strings.Replace(cdnPattern, "{icon}", icon, 1)
+	}
+
+	favicon := b.Favicon
+	if favicon == "" && icon != "" && (strings.HasPrefix(icon, "http://") || strings.HasPrefix(icon, "https://") || strings.HasPrefix(icon, "data:")) {
+		favicon = icon
+	}
+
+	brandingView := DashboardBrandingView{
+		Title:    title,
+		Subtitle: subtitle,
+		Footer:   footer,
+		Icon:     icon,
+		Favicon:  favicon,
+		TabTitle: tabTitle,
+	}
+
 	resp := &PublicDashboardResponse{
 		SystemStatus: sysStatus,
 		Counts: DashboardCounts{
@@ -344,6 +396,7 @@ func BuildDashboardResponse(cfg *config.RuntimeConfig, db *storage.DB, isMaintFu
 			ScheduledMaintenanceCount: len(scheduledMaintenances),
 			UptimePercentage:          float64(globalUptime),
 		},
+		Branding:              brandingView,
 		OneOffMaintenances:    oneOffMaintenances,
 		ScheduledMaintenances: scheduledMaintenances,
 		MaintenanceBanners:    legacyBanners,

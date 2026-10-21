@@ -45,6 +45,27 @@ func Load(configDir string) (*RuntimeConfig, error) {
 		if g.SelfhstIconCDN != "" {
 			rc.Global.SelfhstIconCDN = g.SelfhstIconCDN
 		}
+		// Merge and default branding options
+		if strings.TrimSpace(g.Branding.Title) != "" {
+			rc.Global.Branding.Title = strings.TrimSpace(g.Branding.Title)
+		}
+		if strings.TrimSpace(g.Branding.Subtitle) != "" {
+			rc.Global.Branding.Subtitle = strings.TrimSpace(g.Branding.Subtitle)
+		}
+		if strings.TrimSpace(g.Branding.Footer) != "" {
+			rc.Global.Branding.Footer = strings.TrimSpace(g.Branding.Footer)
+		}
+		if strings.TrimSpace(g.Branding.Icon) != "" {
+			rc.Global.Branding.Icon = strings.TrimSpace(g.Branding.Icon)
+		}
+		if strings.TrimSpace(g.Branding.Favicon) != "" {
+			rc.Global.Branding.Favicon = strings.TrimSpace(g.Branding.Favicon)
+		}
+		if strings.TrimSpace(g.Branding.TabTitle) != "" {
+			rc.Global.Branding.TabTitle = strings.TrimSpace(g.Branding.TabTitle)
+		} else {
+			rc.Global.Branding.TabTitle = rc.Global.Branding.Title + " | Status Dashboard"
+		}
 	}
 
 	// 2. Load zones from zones/*.yml

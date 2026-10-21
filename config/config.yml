@@ -5,3 +5,12 @@ retries: 3
 timezone: "Europe/Berlin"
 history_retention_days: 30
 selfhst_icon_cdn: "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg"
+
+# Optional Custom UI Branding
+branding:
+  title: "Status Dashboard"
+  subtitle: "for my awesome homelab"
+  footer: "© some-domain.org"
+  icon: ""
+  favicon: ""
+  tab_title: "Status Dashboard"

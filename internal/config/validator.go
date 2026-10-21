@@ -140,5 +140,17 @@ func Validate(rc *RuntimeConfig) []string {
 		}
 	}
 
+	// 6. Validate branding
+	if strings.HasPrefix(rc.Global.Branding.Favicon, "http://") || strings.HasPrefix(rc.Global.Branding.Favicon, "https://") {
+		if _, err := url.ParseRequestURI(rc.Global.Branding.Favicon); err != nil {
+			errors = append(errors, fmt.Sprintf("branding: invalid favicon URL %q: %v", rc.Global.Branding.Favicon, err))
+		}
+	}
+	if strings.HasPrefix(rc.Global.Branding.Icon, "http://") || strings.HasPrefix(rc.Global.Branding.Icon, "https://") {
+		if _, err := url.ParseRequestURI(rc.Global.Branding.Icon); err != nil {
+			errors = append(errors, fmt.Sprintf("branding: invalid icon URL %q: %v", rc.Global.Branding.Icon, err))
+		}
+	}
+
 	return errors
 }

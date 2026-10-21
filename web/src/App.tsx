@@ -75,6 +75,27 @@ export function App() {
     };
   }, []);
 
+  // Synchronize document <title> and favicon with branding metadata
+  useEffect(() => {
+    if (!data?.branding) return;
+
+    if (data.branding.tab_title) {
+      document.title = data.branding.tab_title;
+    } else if (data.branding.title) {
+      document.title = `${data.branding.title} | Status Dashboard`;
+    }
+
+    if (data.branding.favicon) {
+      let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = data.branding.favicon;
+    }
+  }, [data?.branding]);
+
   return (
     <div className="min-h-screen bg-background text-slate-100 flex flex-col font-sans">
       <Header data={data} />
@@ -105,7 +126,7 @@ export function App() {
       </main>
 
       <footer className="border-t border-cardBorder py-6 text-center text-xs text-slate-500">
-        <p>uptime-mon • Single-Binary Declarative Uptime Monitor</p>
+        <p>{data?.branding?.footer || 'uptime-mon • Single-Binary Declarative Uptime Monitor'}</p>
       </footer>
     </div>
   );

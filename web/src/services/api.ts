@@ -69,6 +69,15 @@ export interface MaintenanceBanner {
   is_active: boolean;
 }
 
+export interface BrandingView {
+  title: string;
+  subtitle: string;
+  footer: string;
+  icon: string;
+  favicon: string;
+  tab_title: string;
+}
+
 export interface DashboardData {
   system_status: 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING';
   counts: {
@@ -78,6 +87,7 @@ export interface DashboardData {
     scheduled_maintenance_count: number;
     uptime_percentage: number;
   };
+  branding: BrandingView;
   one_off_maintenances: OneOffMaintenanceView[];
   scheduled_maintenances: ScheduledMaintenanceView[];
   maintenance_banners: MaintenanceBanner[];

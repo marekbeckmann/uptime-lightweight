@@ -1,5 +1,5 @@
 webhooks:
-  - id: "discord-main"
+  - id: "discord"
     type: "discord"
     url: "https://discord.com/api/webhooks/mock/test-webhook"
     events:

@@ -32,14 +32,25 @@ func (d Duration) Duration() time.Duration {
 	return time.Duration(d)
 }
 
+// BrandingConfig represents custom UI branding in config.yml
+type BrandingConfig struct {
+	Title    string `yaml:"title"`
+	Subtitle string `yaml:"subtitle"`
+	Footer   string `yaml:"footer"`
+	Icon     string `yaml:"icon"`
+	Favicon  string `yaml:"favicon"`
+	TabTitle string `yaml:"tab_title"`
+}
+
 // GlobalConfig represents settings in config.yml
 type GlobalConfig struct {
-	Interval             Duration `yaml:"interval"`
-	Timeout              Duration `yaml:"timeout"`
-	Retries              int      `yaml:"retries"`
-	Timezone             string   `yaml:"timezone"`
-	HistoryRetentionDays int      `yaml:"history_retention_days"`
-	SelfhstIconCDN       string   `yaml:"selfhst_icon_cdn"`
+	Interval             Duration       `yaml:"interval"`
+	Timeout              Duration       `yaml:"timeout"`
+	Retries              int            `yaml:"retries"`
+	Timezone             string         `yaml:"timezone"`
+	HistoryRetentionDays int            `yaml:"history_retention_days"`
+	SelfhstIconCDN       string         `yaml:"selfhst_icon_cdn"`
+	Branding             BrandingConfig `yaml:"branding"`
 }
 
 // Zone represents a grouping in zones/*.yml
@@ -174,6 +185,14 @@ func DefaultGlobalConfig() GlobalConfig {
 		Timezone:             "Europe/Berlin",
 		HistoryRetentionDays: 30,
 		SelfhstIconCDN:       "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg",
+		Branding: BrandingConfig{
+			Title:    "uptime-mon",
+			Subtitle: "Continuous GitOps Uptime & Protocol Monitoring",
+			Footer:   "uptime-mon • Single-Binary Declarative Uptime Monitor",
+			Icon:     "",
+			Favicon:  "",
+			TabTitle: "uptime-mon | Status Dashboard",
+		},
 	}
 }
 
