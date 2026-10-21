@@ -29,8 +29,9 @@ specs/
 # ==========================================
 # Go Artifacts
 # ==========================================
-/uptime-mon
+*_test.go
 uptime-mon
+!cmd/uptime-mon
 *.exe
 *.test
 /coverage/
