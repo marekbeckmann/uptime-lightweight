@@ -1,0 +1,7 @@
+# Global settings for uptime-mon
+interval: "60s"
+timeout: "5s"
+retries: 3
+timezone: "Europe/Berlin"
+history_retention_days: 30
+selfhst_icon_cdn: "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg"

@@ -1,0 +1,16 @@
+webhooks:
+  - id: "discord-main"
+    type: "discord"
+    url: "https://discord.com/api/webhooks/mock/test-webhook"
+    events:
+      - "host_down"
+      - "host_up"
+      - "tls_expiry"
+      - "maintenance_created"
+      - "maintenance_reminder"
+  - id: "generic-siem"
+    type: "generic"
+    url: "http://localhost:8080/mock-siem"
+    events:
+      - "host_down"
+      - "host_up"

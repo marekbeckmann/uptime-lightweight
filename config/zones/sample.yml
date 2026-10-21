@@ -1,0 +1,11 @@
+- id: "networking"
+  display_name: "Networking & DNS"
+  description: "Core routers, firewalls, and nameservers"
+  order: 1
+  icon: "opnsense"
+
+- id: "webserver"
+  display_name: "Web Services & Apps"
+  description: "Public facing portals and internal APIs"
+  order: 2
+  icon: "traefik"

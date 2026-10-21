@@ -1,36 +1,65 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# ==========================================
+# Operating System & IDE Files
+# ==========================================
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env*.local
+.env.*
+!.env.example
 *.pem
 
-# debug
+# ==========================================
+# Spec-Kit & Agent Caches
+# ==========================================
+.agents/
+.specify/
+specs/
+
+# ==========================================
+# Go Artifacts
+# ==========================================
+/uptime-mon
+uptime-mon
+*.exe
+*.test
+/coverage/
+
+# ==========================================
+# Web & Frontend (Vite / React)
+# ==========================================
+node_modules/
+.pnp
+.pnp.js
+*.tsbuildinfo
+
+# Build distribution & Vite cache
+/web/dist/
+.vite/
+/web/.vite/
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
-.env*.local
-.env
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ==========================================
+# SQLite Runtime Data
+# ==========================================
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm
+/data/*.db*
+# Keep the data directory in Git without committing the database
+!/data/.gitkeep

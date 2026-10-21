@@ -1,0 +1,10 @@
+id: "database-backup"
+title: "Nightly Database Snapshot"
+message: "Automated snapshot and WAL archiving"
+schedule: "0 1 * * *" # Daily at 01:00
+duration: "45m"
+remindme: 1
+affected_zones:
+  - "webserver"
+affected_hosts:
+  - "all"

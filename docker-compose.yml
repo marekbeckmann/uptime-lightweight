@@ -1,0 +1,17 @@
+services:
+  uptime-mon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: uptime-mon:latest
+    container_name: uptime-mon
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/app/config:ro    # Read-only configuration
+      - ./data:/app/data           # Embedded SQLite persistence
+    environment:
+      - TZ=Europe/Berlin
+    cap_add:
+      - NET_RAW                    # Required for privileged ICMP ping (optional: falls back to UDP ping)
