@@ -8,19 +8,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#09090b',
-        card: '#111113',
-        surfaceHover: '#18181b',
-        cardBorder: '#27272a',
+        background: '#090d16',
+        card: '#111827',
+        cardBorder: '#1f2937',
         statusUp: '#10b981',
         statusDown: '#f43f5e',
         statusWarn: '#f59e0b',
-        statusPending: '#71717a',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
-      },
+        statusPending: '#6b7280',
+      }
     },
   },
   plugins: [],

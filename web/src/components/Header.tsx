@@ -1,13 +1,13 @@
 import React from 'react';
+import { Activity, CheckCircle2, AlertTriangle, Wrench, ShieldCheck } from 'lucide-react';
 import { DashboardData } from '../services/api';
 import { ScheduledMaintenanceBadge } from './ScheduledMaintenanceBadge';
 
 interface HeaderProps {
   data: DashboardData | null;
-  isStreaming?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ data, isStreaming = true }) => {
+export const Header: React.FC<HeaderProps> = ({ data }) => {
   const counts = data?.counts || {
     hosts_up: 0,
     hosts_down: 0,
@@ -19,72 +19,69 @@ export const Header: React.FC<HeaderProps> = ({ data, isStreaming = true }) => {
   const status = data?.system_status || 'PENDING';
 
   return (
-    <header className="h-14 sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-[#09090b]/80 backdrop-blur-md px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
-        {/* Left: Brand & Status Dot */}
+    <header className="border-b border-cardBorder bg-card/60 backdrop-blur-md px-6 py-6 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              {isStreaming ? (
-                <>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </>
-              ) : (
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              )}
-            </span>
-            <span className="font-mono text-sm font-semibold tracking-tight text-zinc-100">
-              uptime-mon
-            </span>
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            <Activity className="w-6 h-6" />
           </div>
-
-          <span
-            className={`hidden md:inline-flex items-center px-2 py-0.5 text-[11px] font-mono rounded border ${
-              status === 'UP'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : status === 'DOWN'
-                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-            }`}
-          >
-            {status === 'UP' ? 'OPERATIONAL' : status === 'DOWN' ? 'DISRUPTED' : 'MAINTENANCE'}
-          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-white">uptime-mon</h1>
+              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${
+                status === 'UP'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : status === 'DOWN'
+                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              }`}>
+                {status === 'UP' ? 'All Systems Operational' : status === 'DOWN' ? 'Service Disruption' : 'Maintenance'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">Continuous GitOps Uptime & Protocol Monitoring</p>
+          </div>
         </div>
 
-        {/* Right: Inline Segmented Telemetry Strip */}
-        <div className="inline-flex items-center divide-x divide-zinc-800 border border-zinc-800/80 rounded-md bg-zinc-900/60 text-xs font-mono">
-          {/* UP Count */}
-          <div className="px-3 py-1.5 flex items-center gap-1.5 text-zinc-400">
-            <span className="text-zinc-500 text-[10px] uppercase font-semibold">UP</span>
-            <span className="text-emerald-400 font-semibold tabular-nums">{counts.hosts_up}</span>
+        {/* Global Summary Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center items-center">
+          <div className="bg-background/80 border border-cardBorder rounded-lg px-4 py-2">
+            <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Hosts Up</span>
+            </div>
+            <div className="text-lg font-bold text-emerald-400">{counts.hosts_up}</div>
           </div>
 
-          {/* DOWN Count */}
-          <div className="px-3 py-1.5 flex items-center gap-1.5 text-zinc-400">
-            <span className="text-zinc-500 text-[10px] uppercase font-semibold">DOWN</span>
-            <span
-              className={`font-semibold tabular-nums ${
-                counts.hosts_down > 0 ? 'text-rose-400' : 'text-zinc-500'
-              }`}
-            >
+          <div className="bg-background/80 border border-cardBorder rounded-lg px-4 py-2">
+            <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              <span>Hosts Down</span>
+            </div>
+            <div className={`text-lg font-bold ${counts.hosts_down > 0 ? 'text-rose-400' : 'text-slate-200'}`}>
               {counts.hosts_down}
-            </span>
+            </div>
           </div>
 
-          {/* Aggregate Uptime Percentage */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-zinc-400">
-            <span className="text-zinc-500 text-[10px] uppercase font-semibold">UPTIME</span>
-            <span className="text-zinc-200 tabular-nums">
-              {counts.uptime_percentage.toFixed(2)}%
-            </span>
+          <div className="bg-background/80 border border-cardBorder rounded-lg px-4 py-2">
+            <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
+              <Wrench className="w-3.5 h-3.5 text-amber-400" />
+              <span>In Maint</span>
+            </div>
+            <div className="text-lg font-bold text-amber-400">{counts.in_maintenance}</div>
           </div>
 
-          {/* Scheduled Maintenance Popover Trigger */}
           <ScheduledMaintenanceBadge
-            count={counts.scheduled_maintenance_count}
+            count={counts.scheduled_maintenance_count ?? (data?.scheduled_maintenances?.length || 0)}
             maintenances={data?.scheduled_maintenances || []}
           />
+
+          <div className="bg-background/80 border border-cardBorder rounded-lg px-4 py-2">
+            <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>24h Uptime</span>
+            </div>
+            <div className="text-lg font-bold text-white">{counts.uptime_percentage.toFixed(1)}%</div>
+          </div>
         </div>
       </div>
     </header>

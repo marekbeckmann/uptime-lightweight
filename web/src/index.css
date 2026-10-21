@@ -6,16 +6,8 @@
   color-scheme: dark;
 }
 
-html, body {
+body {
   margin: 0;
-  padding: 0;
-  background-color: #09090b;
-  color: #f4f4f5;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+  background-color: #090d16;
+  color: #f8fafc;
 }

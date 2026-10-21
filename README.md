@@ -1,24 +1,9 @@
-# uptime-mon
+# Lightweight Uptime Monitoring
 
-A lightweight, self-hosted, single-binary Uptime Monitoring Platform inspired by Uptime Kuma and Gatus. Configured strictly via declarative YAML files in `./config/` with zero web-based administration endpoints, a sleek dark-mode-only dashboard, deduplicated webhook alerting, scheduled maintenance windows, and a token-secured Homepage Custom API widget.
+> [!IMPORTANT]
+> This project was built with the help of _AI_. It has implemented major parts of the _frontend-design_, aswell as created _skeletons_ for the various `.yaml` configuration files. 
 
----
-
-## Key Features
-
-- **Declarative Config-as-Code**: Entirely configured via `./config/` (`config.yml`, `zones/`, `endpoints/`, `maintenance/`, `alerting/`).
-- **Zero Web Administration**: The dashboard and HTTP API are strictly read-only and immutable. No web-based mutation vectors or administrative logins.
-- **Security-First Public Surface**: Dashboard conceals internal target IPs, ports, and internal DNS servers by default (`show_target: false`).
-- **Multi-Protocol Probing**:
-  - `ping`: ICMP Echo with automatic unprivileged UDP socket fallback.
-  - `tcp`: 3-way handshake verification on custom ports.
-  - `dns`: UDP, TCP, DNS-over-TLS (`dot`, port 853), and RFC 8484 DNS-over-HTTPS (`doh`).
-  - `https`: HTTP status code verification (supports `20X`, `30X`, ranges like `200-204`, exact integers), `ignore_tls_errors`, and TLS certificate expiration warnings (`tls_expiry_warn_days`).
-- **Single-Binary Architecture**: Daemon and CLI (`uptime-mon`) live in the same executable with CGO-free embedded SQLite (`modernc.org/sqlite` in WAL mode with `busy_timeout=5000`) at `./data/uptime.db`.
-- **Hot-Reloading**: Changes saved to `./config/` are automatically applied via `fsnotify` with a 500ms debounce timer without dropping historical heartbeat data or restarting active probes.
-- **Idempotent Webhook Alerting**: Rich color-coded Discord embeds and generic JSON webhooks. Alerts are debounced via `retries` thresholds and deduplicated across daemon restarts and hot-reloads.
-- **One-Off & CRON Maintenance**: Suppresses Down/Up alert storms during planned maintenance windows and sends automated reminder notifications (`remindme`).
-- **Homepage Custom API Widget**: `GET /api/v1/status/summary` secured with token authentication (`X-API-Token-Id`/`Secret`, Bearer, Basic Auth) with CLI credential management.
+A lightweight, self-hosted, single-binary Uptime Monitoring Platform inspired by Uptime Kuma and Gatus. Configured strictly via declarative YAML files in `./config/` with zero web-based administration endpoints, a dark-mode-only dashboard, deduplicated webhook alerting, scheduled maintenance windows, and a token-secured [Homepage](https://gethomepage.dev) Custom API widget.
 
 ---
 
@@ -27,9 +12,13 @@ A lightweight, self-hosted, single-binary Uptime Monitoring Platform inspired by
 ### 1. Build Single Executable
 
 ```bash
-# Build embedded frontend SPA
-cd web && npm install && npm run build && cd ..
+cd web && \
+npm install && \
+npm run build && \
+cd ..
+```
 
+```bash
 # Compile single binary
 go build -o uptime-mon ./cmd/uptime-mon
 ```
@@ -40,7 +29,17 @@ go build -o uptime-mon ./cmd/uptime-mon
 ./uptime-mon --config --validate
 ```
 
-### 3. Generate Token for Homepage Dashboard Widget
+```text
+Validating configuration files in ./config...
+✓ Global config: OK
+✓ 2 zones defined: OK
+✓ 4 endpoints defined: OK
+✓ 2 one-off maintenance, 2 scheduled: OK
+✓ 2 webhooks configured: OK
+Configuration valid. 0 errors found.
+```
+
+### 3. Generate API-Token for Homepage Dashboard Widget
 
 ```bash
 ./uptime-mon --api --token --new --name "Homelab Production"
@@ -78,7 +77,7 @@ This command outputs a ready-to-paste `services.yaml` snippet for [gethomepage.d
 ./uptime-mon serve --port 8080
 ```
 
-Open your browser to `http://localhost:8080` to access the read-only dark-mode dashboard.
+Open your browser to `http://localhost:8080` to access the dashboard.
 
 ---
 

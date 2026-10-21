@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HeartbeatItem } from '../services/api';
 
 interface HeartbeatBarProps {
@@ -6,23 +6,19 @@ interface HeartbeatBarProps {
 }
 
 export const HeartbeatBar: React.FC<HeartbeatBarProps> = ({ heartbeats }) => {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
-  // Exactly 45 slots
-  const totalSlots = 45;
+  // Ensure we display up to 60 slots
+  const totalSlots = 50;
   const items = heartbeats.slice(-totalSlots);
   const emptySlots = Math.max(0, totalSlots - items.length);
 
   return (
-    <div
-      className="flex items-center gap-[2px] py-1 relative"
-      onMouseLeave={() => setHoveredIdx(null)}
-    >
-      {/* Ghost slots for newly started endpoints */}
+    <div className="flex items-center gap-[3px] py-1">
+      {/* Ghost slots if newly started */}
       {Array.from({ length: emptySlots }).map((_, i) => (
         <div
           key={`empty-${i}`}
-          className="h-4 w-[3px] rounded-[1px] bg-zinc-800/80 shrink-0"
+          className="h-7 flex-1 min-w-[3px] max-w-[6px] rounded-[1px] bg-slate-800/60"
+          title="No data"
         />
       ))}
 
@@ -34,36 +30,18 @@ export const HeartbeatBar: React.FC<HeartbeatBarProps> = ({ heartbeats }) => {
         } else if (hb.status === 'MAINTENANCE') {
           color = 'bg-amber-500 hover:bg-amber-400';
         } else if (hb.status === 'PENDING') {
-          color = 'bg-zinc-600';
+          color = 'bg-slate-600';
         }
 
         const dateStr = new Date(hb.timestamp).toLocaleTimeString();
-        const isHovered = hoveredIdx === i;
+        const tooltip = `${hb.status} (${hb.latency_ms}ms) at ${dateStr}${hb.error ? ` - ${hb.error}` : ''}`;
 
         return (
           <div
             key={hb.id || i}
-            onMouseEnter={() => setHoveredIdx(i)}
-            className={`h-4 w-[3px] rounded-[1px] transition-colors duration-75 cursor-pointer shrink-0 relative ${color}`}
-          >
-            {isHovered && (
-              <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700/80 text-[10px] font-mono text-zinc-200 px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tabular-nums">
-                <span
-                  className={
-                    hb.status === 'UP'
-                      ? 'text-emerald-400'
-                      : hb.status === 'DOWN'
-                      ? 'text-rose-400'
-                      : 'text-amber-400'
-                  }
-                >
-                  {hb.status}
-                </span>{' '}
-                · {hb.latency_ms}ms · {dateStr}
-                {hb.error ? ` · ${hb.error}` : ''}
-              </div>
-            )}
-          </div>
+            className={`h-7 flex-1 min-w-[3px] max-w-[6px] rounded-[1px] transition-all duration-150 cursor-pointer ${color}`}
+            title={tooltip}
+          />
         );
       })}
     </div>

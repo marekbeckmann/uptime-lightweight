@@ -3,12 +3,12 @@ import { Header } from './components/Header';
 import { MaintenanceBannerBar } from './components/MaintenanceBannerBar';
 import { ZoneGroup } from './components/ZoneGroup';
 import { fetchDashboard, subscribeToEvents, DashboardData } from './services/api';
+import { RefreshCw } from 'lucide-react';
 
 export function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isStreaming, setIsStreaming] = useState(true);
 
   const loadData = async () => {
     try {
@@ -32,7 +32,6 @@ export function App() {
 
     // Subscribe to real-time events via Server-Sent Events (SSE)
     const unsubscribe = subscribeToEvents((heartbeat) => {
-      setIsStreaming(true);
       setData((prev) => {
         if (!prev) return prev;
 
@@ -77,27 +76,27 @@ export function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
-      <Header data={data} isStreaming={isStreaming} />
+    <div className="min-h-screen bg-background text-slate-100 flex flex-col font-sans">
+      <Header data={data} />
 
       {data && <MaintenanceBannerBar maintenances={data.one_off_maintenances} />}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+      <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
         {loading && !data && (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-500 gap-2">
-            <span className="w-4 h-4 border border-zinc-700 border-t-zinc-400 rounded-full animate-spin"></span>
-            <p className="text-xs font-mono">Connecting to monitoring daemon...</p>
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+            <RefreshCw className="w-8 h-8 animate-spin text-emerald-400" />
+            <p className="text-sm">Connecting to monitoring daemon...</p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono">
-            Error loading status: {error}
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
+            Failed to load status dashboard: {error}
           </div>
         )}
 
         {data && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {data.zones.map((zone) => (
               <ZoneGroup key={zone.id} zone={zone} />
             ))}
@@ -105,7 +104,7 @@ export function App() {
         )}
       </main>
 
-      <footer className="border-t border-zinc-800/80 py-4 text-center text-xs text-zinc-600 font-mono">
+      <footer className="border-t border-cardBorder py-6 text-center text-xs text-slate-500">
         <p>uptime-mon • Single-Binary Declarative Uptime Monitor</p>
       </footer>
     </div>
