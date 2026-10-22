@@ -197,3 +197,61 @@ branding:
 		t.Errorf("expected derived TabTitle 'Homelab Ops | Status Dashboard', got %q", rcCustom.Global.Branding.TabTitle)
 	}
 }
+
+func TestZoneCollapseConfig(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "uptimemon-collapse-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// 1. Defaults should be false
+	rcDefault, err := config.Load(tempDir)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if rcDefault.Global.DisableCollapse != false {
+		t.Errorf("expected DisableCollapse default false, got %v", rcDefault.Global.DisableCollapse)
+	}
+	if rcDefault.Global.InitiallyCollapsed != false {
+		t.Errorf("expected InitiallyCollapsed default false, got %v", rcDefault.Global.InitiallyCollapsed)
+	}
+
+	// 2. Test camelCase
+	camelCfg := `
+disableCollapse: true
+initiallyCollapsed: true
+`
+	if err := os.WriteFile(filepath.Join(tempDir, "config.yml"), []byte(camelCfg), 0644); err != nil {
+		t.Fatalf("failed to write config.yml: %v", err)
+	}
+	rcCamel, err := config.Load(tempDir)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if rcCamel.Global.DisableCollapse != true {
+		t.Errorf("expected DisableCollapse true, got %v", rcCamel.Global.DisableCollapse)
+	}
+	if rcCamel.Global.InitiallyCollapsed != true {
+		t.Errorf("expected InitiallyCollapsed true, got %v", rcCamel.Global.InitiallyCollapsed)
+	}
+
+	// 3. Test snake_case
+	snakeCfg := `
+disable_collapse: true
+initially_collapsed: true
+`
+	if err := os.WriteFile(filepath.Join(tempDir, "config.yml"), []byte(snakeCfg), 0644); err != nil {
+		t.Fatalf("failed to write config.yml: %v", err)
+	}
+	rcSnake, err := config.Load(tempDir)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if rcSnake.Global.DisableCollapse != true {
+		t.Errorf("expected DisableCollapse true, got %v", rcSnake.Global.DisableCollapse)
+	}
+	if rcSnake.Global.InitiallyCollapsed != true {
+		t.Errorf("expected InitiallyCollapsed true, got %v", rcSnake.Global.InitiallyCollapsed)
+	}
+}

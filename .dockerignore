@@ -1,0 +1,13 @@
+.git
+.github
+.specify
+.agents
+specs
+wiki
+data
+*.db
+*.db-shm
+*.db-wal
+uptime-mon
+web/node_modules
+web/dist

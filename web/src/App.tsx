@@ -119,7 +119,7 @@ export function App() {
         {data && (
           <div className="space-y-8">
             {data.zones.map((zone) => (
-              <ZoneGroup key={zone.id} zone={zone} />
+              <ZoneGroup key={zone.id} zone={zone} uiConfig={data.ui} />
             ))}
           </div>
         )}

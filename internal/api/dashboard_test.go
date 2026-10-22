@@ -333,3 +333,94 @@ func TestDashboardBrandingPayloadAndResolution(t *testing.T) {
 		t.Errorf("expected HTTP response branding.tab_title = 'uptime-mon | Status Dashboard', got %q", httpResp.Branding.TabTitle)
 	}
 }
+
+func TestDashboardUIConfigResponse(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "uptimemon-api-ui-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	db, err := storage.Open(filepath.Join(tempDir, "uptime.db"))
+	if err != nil {
+		t.Fatalf("storage.Open failed: %v", err)
+	}
+	defer db.Close()
+
+	// 1. Test defaults
+	cfgDefault := &config.RuntimeConfig{
+		Global:    config.DefaultGlobalConfig(),
+		Zones:     map[string]config.Zone{},
+		Endpoints: map[string]config.Endpoint{},
+	}
+	respDefault, err := api.BuildDashboardResponse(cfgDefault, db, func(z, e string, t time.Time) bool { return false })
+	if err != nil {
+		t.Fatalf("BuildDashboardResponse failed: %v", err)
+	}
+	if respDefault.UI.DisableCollapse != false {
+		t.Errorf("expected DisableCollapse false, got %v", respDefault.UI.DisableCollapse)
+	}
+	if respDefault.UI.InitiallyCollapsed != false {
+		t.Errorf("expected InitiallyCollapsed false, got %v", respDefault.UI.InitiallyCollapsed)
+	}
+
+	// 2. Test initiallyCollapsed: true
+	cfgInit := &config.RuntimeConfig{
+		Global: config.GlobalConfig{
+			InitiallyCollapsed: true,
+		},
+		Zones:     map[string]config.Zone{},
+		Endpoints: map[string]config.Endpoint{},
+	}
+	respInit, err := api.BuildDashboardResponse(cfgInit, db, func(z, e string, t time.Time) bool { return false })
+	if err != nil {
+		t.Fatalf("BuildDashboardResponse failed: %v", err)
+	}
+	if respInit.UI.InitiallyCollapsed != true {
+		t.Errorf("expected InitiallyCollapsed true, got %v", respInit.UI.InitiallyCollapsed)
+	}
+	if respInit.UI.DisableCollapse != false {
+		t.Errorf("expected DisableCollapse false, got %v", respInit.UI.DisableCollapse)
+	}
+
+	// 3. Test precedence: disableCollapse overrides initiallyCollapsed
+	cfgOverride := &config.RuntimeConfig{
+		Global: config.GlobalConfig{
+			DisableCollapse:    true,
+			InitiallyCollapsed: true,
+		},
+		Zones:     map[string]config.Zone{},
+		Endpoints: map[string]config.Endpoint{},
+	}
+	respOverride, err := api.BuildDashboardResponse(cfgOverride, db, func(z, e string, t time.Time) bool { return false })
+	if err != nil {
+		t.Fatalf("BuildDashboardResponse failed: %v", err)
+	}
+	if respOverride.UI.DisableCollapse != true {
+		t.Errorf("expected DisableCollapse true, got %v", respOverride.UI.DisableCollapse)
+	}
+	if respOverride.UI.InitiallyCollapsed != false {
+		t.Errorf("expected InitiallyCollapsed false when DisableCollapse is true, got %v", respOverride.UI.InitiallyCollapsed)
+	}
+
+	// 4. Test HTTP endpoint JSON response
+	srv := api.NewServer(cfgOverride, db, nil, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/dashboard", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rec.Code)
+	}
+
+	var httpResp api.PublicDashboardResponse
+	if err := json.NewDecoder(rec.Body).Decode(&httpResp); err != nil {
+		t.Fatalf("failed to decode JSON response: %v", err)
+	}
+	if httpResp.UI.DisableCollapse != true {
+		t.Errorf("expected HTTP response ui.disable_collapse = true, got %v", httpResp.UI.DisableCollapse)
+	}
+	if httpResp.UI.InitiallyCollapsed != false {
+		t.Errorf("expected HTTP response ui.initially_collapsed = false, got %v", httpResp.UI.InitiallyCollapsed)
+	}
+}

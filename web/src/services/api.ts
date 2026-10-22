@@ -78,6 +78,11 @@ export interface BrandingView {
   tab_title: string;
 }
 
+export interface UIConfig {
+  disable_collapse: boolean;
+  initially_collapsed: boolean;
+}
+
 export interface DashboardData {
   system_status: 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING';
   counts: {
@@ -88,6 +93,7 @@ export interface DashboardData {
     uptime_percentage: number;
   };
   branding: BrandingView;
+  ui?: UIConfig;
   one_off_maintenances: OneOffMaintenanceView[];
   scheduled_maintenances: ScheduledMaintenanceView[];
   maintenance_banners: MaintenanceBanner[];

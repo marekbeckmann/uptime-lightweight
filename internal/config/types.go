@@ -51,6 +51,8 @@ type GlobalConfig struct {
 	HistoryRetentionDays int            `yaml:"history_retention_days"`
 	SelfhstIconCDN       string         `yaml:"selfhst_icon_cdn"`
 	Branding             BrandingConfig `yaml:"branding"`
+	DisableCollapse      bool           `yaml:"disable_collapse"`
+	InitiallyCollapsed   bool           `yaml:"initially_collapsed"`
 }
 
 // Zone represents a grouping in zones/*.yml

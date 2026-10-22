@@ -66,6 +66,26 @@ func Load(configDir string) (*RuntimeConfig, error) {
 		} else {
 			rc.Global.Branding.TabTitle = rc.Global.Branding.Title + " | Status Dashboard"
 		}
+
+		// Support both camelCase and snake_case for zone collapse flags
+		var rawCollapse struct {
+			DisableCollapse         *bool `yaml:"disableCollapse"`
+			DisableCollapseSnake    *bool `yaml:"disable_collapse"`
+			InitiallyCollapsed      *bool `yaml:"initiallyCollapsed"`
+			InitiallyCollapsedSnake *bool `yaml:"initially_collapsed"`
+		}
+		if err := yaml.Unmarshal(data, &rawCollapse); err == nil {
+			if rawCollapse.DisableCollapse != nil {
+				rc.Global.DisableCollapse = *rawCollapse.DisableCollapse
+			} else if rawCollapse.DisableCollapseSnake != nil {
+				rc.Global.DisableCollapse = *rawCollapse.DisableCollapseSnake
+			}
+			if rawCollapse.InitiallyCollapsed != nil {
+				rc.Global.InitiallyCollapsed = *rawCollapse.InitiallyCollapsed
+			} else if rawCollapse.InitiallyCollapsedSnake != nil {
+				rc.Global.InitiallyCollapsed = *rawCollapse.InitiallyCollapsedSnake
+			}
+		}
 	}
 
 	// 2. Load zones from zones/*.yml

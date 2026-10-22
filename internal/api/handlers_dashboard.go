@@ -55,11 +55,18 @@ type DashboardBrandingView struct {
 	TabTitle string `json:"tab_title"`
 }
 
+// DashboardUIConfigView contains client UI configuration options
+type DashboardUIConfigView struct {
+	DisableCollapse    bool `json:"disable_collapse"`
+	InitiallyCollapsed bool `json:"initially_collapsed"`
+}
+
 // PublicDashboardResponse is the top-level payload for GET /api/v1/dashboard
 type PublicDashboardResponse struct {
 	SystemStatus          string                     `json:"system_status"`
 	Counts                DashboardCounts            `json:"counts"`
 	Branding              DashboardBrandingView      `json:"branding"`
+	UI                    DashboardUIConfigView      `json:"ui"`
 	OneOffMaintenances    []OneOffMaintenanceView    `json:"one_off_maintenances"`
 	ScheduledMaintenances []ScheduledMaintenanceView `json:"scheduled_maintenances"`
 	MaintenanceBanners    []DashboardMaintenanceView `json:"maintenance_banners"` // Retained for backward compatibility
@@ -387,6 +394,18 @@ func BuildDashboardResponse(cfg *config.RuntimeConfig, db *storage.DB, isMaintFu
 		TabTitle: tabTitle,
 	}
 
+	disableCollapse := cfg.Global.DisableCollapse
+	initiallyCollapsed := cfg.Global.InitiallyCollapsed
+	if disableCollapse {
+		// When collapse is disabled, all zones must remain expanded
+		initiallyCollapsed = false
+	}
+
+	uiView := DashboardUIConfigView{
+		DisableCollapse:    disableCollapse,
+		InitiallyCollapsed: initiallyCollapsed,
+	}
+
 	resp := &PublicDashboardResponse{
 		SystemStatus: sysStatus,
 		Counts: DashboardCounts{
@@ -397,6 +416,7 @@ func BuildDashboardResponse(cfg *config.RuntimeConfig, db *storage.DB, isMaintFu
 			UptimePercentage:          float64(globalUptime),
 		},
 		Branding:              brandingView,
+		UI:                    uiView,
 		OneOffMaintenances:    oneOffMaintenances,
 		ScheduledMaintenances: scheduledMaintenances,
 		MaintenanceBanners:    legacyBanners,

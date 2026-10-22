@@ -6,6 +6,12 @@ timezone: "Europe/Berlin"
 history_retention_days: 30
 selfhst_icon_cdn: "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/{icon}.svg"
 
+# Zone Collapse Behavior (optional)
+# disableCollapse: true|false (default: false) - If true, zones cannot be collapsed and remain permanently expanded
+# initiallyCollapsed: true|false (default: false) - If true, all zones start collapsed on fresh dashboard load
+disableCollapse: false
+initiallyCollapsed: false
+
 # Optional Custom UI Branding
 branding:
   title: "Status Dashboard"
