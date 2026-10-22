@@ -424,3 +424,82 @@ func TestDashboardUIConfigResponse(t *testing.T) {
 		t.Errorf("expected HTTP response ui.initially_collapsed = false, got %v", httpResp.UI.InitiallyCollapsed)
 	}
 }
+
+func TestDashboardDynamicVariables(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "uptimemon-api-vars-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	db, err := storage.Open(filepath.Join(tempDir, "uptime.db"))
+	if err != nil {
+		t.Fatalf("storage.Open failed: %v", err)
+	}
+	defer db.Close()
+
+	cfg := &config.RuntimeConfig{
+		Global: config.GlobalConfig{
+			Timezone: "Europe/Berlin",
+			Branding: config.BrandingConfig{
+				Title:    "Dashboard ({total_endpoints} Hosts)",
+				Subtitle: "Active in {total_zones} Zones on {hostname}",
+				Footer:   "© {current_year} Ops ({timezone}) • v{version} • {unknown_token}",
+				TabTitle: "Status {current_year}",
+			},
+		},
+		Zones: map[string]config.Zone{
+			"z1": {ID: "z1", DisplayName: "Zone 1"},
+			"z2": {ID: "z2", DisplayName: "Zone 2"},
+		},
+		Endpoints: map[string]config.Endpoint{
+			"e1": {ID: "e1", DisplayName: "Host 1", Type: "ping", Target: "1.1.1.1"},
+			"e2": {ID: "e2", DisplayName: "Host 2", Type: "ping", Target: "1.0.0.1"},
+			"e3": {ID: "e3", DisplayName: "Host 3", Type: "ping", Target: "8.8.8.8"},
+		},
+	}
+
+	srv := api.NewServer(cfg, db, nil, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/dashboard", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rec.Code)
+	}
+
+	var httpResp api.PublicDashboardResponse
+	if err := json.NewDecoder(rec.Body).Decode(&httpResp); err != nil {
+		t.Fatalf("failed to decode JSON response: %v", err)
+	}
+
+	currentYear := time.Now().Format("2006")
+	hostname, _ := os.Hostname()
+	if hostname == "" {
+		hostname = "localhost"
+	}
+
+	// 1. Verify title
+	expectedTitle := "Dashboard (3 Hosts)"
+	if httpResp.Branding.Title != expectedTitle {
+		t.Errorf("expected Title %q, got %q", expectedTitle, httpResp.Branding.Title)
+	}
+
+	// 2. Verify subtitle
+	expectedSubtitle := "Active in 2 Zones on " + hostname
+	if httpResp.Branding.Subtitle != expectedSubtitle {
+		t.Errorf("expected Subtitle %q, got %q", expectedSubtitle, httpResp.Branding.Subtitle)
+	}
+
+	// 3. Verify footer with year, timezone, version, and preserved unknown token
+	expectedFooter := "© " + currentYear + " Ops (Europe/Berlin) • v1.0.0 • {unknown_token}"
+	if httpResp.Branding.Footer != expectedFooter {
+		t.Errorf("expected Footer %q, got %q", expectedFooter, httpResp.Branding.Footer)
+	}
+
+	// 4. Verify tab title
+	expectedTabTitle := "Status " + currentYear
+	if httpResp.Branding.TabTitle != expectedTabTitle {
+		t.Errorf("expected TabTitle %q, got %q", expectedTabTitle, httpResp.Branding.TabTitle)
+	}
+}

@@ -371,6 +371,19 @@ func BuildDashboardResponse(cfg *config.RuntimeConfig, db *storage.DB, isMaintFu
 		tabTitle = title + " | Status Dashboard"
 	}
 
+	// Resolve dynamic template variables (e.g. {current_year}, {hostname}, {total_endpoints})
+	varContext := config.BuildVariableContext(
+		time.Now(),
+		cfg.Global.Timezone,
+		"1.0.0",
+		len(cfg.Endpoints),
+		len(cfg.Zones),
+	)
+	title = config.InterpolateVariables(title, varContext)
+	subtitle = config.InterpolateVariables(subtitle, varContext)
+	footer = config.InterpolateVariables(footer, varContext)
+	tabTitle = config.InterpolateVariables(tabTitle, varContext)
+
 	icon := b.Icon
 	if icon != "" && !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") && !strings.HasPrefix(icon, "data:") {
 		cdnPattern := cfg.Global.SelfhstIconCDN
