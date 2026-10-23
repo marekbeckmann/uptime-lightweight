@@ -3,7 +3,7 @@ title: "Core Firewall Firmware Upgrade"
 message: "Core firewall firmware update and reboot"
 start_date: "2026-10-21"
 start_time: "18:00"
-end_date: "2026-10-25"
+end_date: "2026-10-22"
 end_time: "04:00"
 remindme: 2
 affected_zones:

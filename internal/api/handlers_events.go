@@ -109,12 +109,20 @@ func (b *SSEBroker) HandleEvents(w http.ResponseWriter, r *http.Request) {
 // AttachProberEvents hooks scheduler events into SSE broadcast
 func (b *SSEBroker) AttachProberEvents(s *prober.Scheduler) {
 	s.OnEvent(func(evt prober.TransitionEvent) {
+		if evt.Type != "HEARTBEAT" {
+			return
+		}
+		probeStatus := evt.ProbeStatus
+		if probeStatus == "" {
+			probeStatus = evt.CurrentStatus
+		}
 		payload := map[string]interface{}{
-			"endpoint_id": evt.EndpointID,
-			"status":      evt.CurrentStatus,
-			"latency_ms":  evt.LatencyMS,
-			"timestamp":   evt.Timestamp,
-			"error":       evt.LastError,
+			"endpoint_id":  evt.EndpointID,
+			"status":       evt.CurrentStatus,
+			"probe_status": probeStatus,
+			"latency_ms":   evt.LatencyMS,
+			"timestamp":    evt.Timestamp,
+			"error":        evt.LastError,
 		}
 		b.BroadcastEvent("heartbeat", payload)
 	})

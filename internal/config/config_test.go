@@ -255,3 +255,74 @@ initially_collapsed: true
 		t.Errorf("expected InitiallyCollapsed true, got %v", rcSnake.Global.InitiallyCollapsed)
 	}
 }
+
+func TestAlertingConfigMultiFileAndFormats(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "uptimemon-alerting-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	alertDir := filepath.Join(tempDir, "alerting")
+	if err := os.MkdirAll(alertDir, 0755); err != nil {
+		t.Fatalf("failed to create alerting dir: %v", err)
+	}
+
+	// 1. File with AlertingConfig struct: { webhooks: [...] }
+	f1 := `
+webhooks:
+  - id: "webhook-1"
+    type: "discord"
+    url: "https://discord.com/api/webhooks/test1"
+    events: ["host_down"]
+`
+	if err := os.WriteFile(filepath.Join(alertDir, "file1.yml"), []byte(f1), 0644); err != nil {
+		t.Fatalf("write file1: %v", err)
+	}
+
+	// 2. File with array format: [ { id: ... } ]
+	f2 := `
+- id: "webhook-2"
+  type: "generic"
+  url: "https://example.com/webhook2"
+  events: ["host_up"]
+- id: "webhook-3"
+  type: "discord"
+  url: "https://discord.com/api/webhooks/test3"
+  events: ["tls_expiry"]
+`
+	if err := os.WriteFile(filepath.Join(alertDir, "file2.yaml"), []byte(f2), 0644); err != nil {
+		t.Fatalf("write file2: %v", err)
+	}
+
+	// 3. File with single webhook format
+	f3 := `
+id: "webhook-4"
+type: "generic"
+url: "https://example.com/webhook4"
+events: ["host_down", "host_up"]
+`
+	if err := os.WriteFile(filepath.Join(alertDir, "file3.yml"), []byte(f3), 0644); err != nil {
+		t.Fatalf("write file3: %v", err)
+	}
+
+	rc, err := config.Load(tempDir)
+	if err != nil {
+		t.Fatalf("config.Load failed: %v", err)
+	}
+
+	if len(rc.Alerting.Webhooks) != 4 {
+		t.Fatalf("expected 4 webhooks loaded across 3 files, got %d", len(rc.Alerting.Webhooks))
+	}
+
+	webhookIDs := make(map[string]bool)
+	for _, w := range rc.Alerting.Webhooks {
+		webhookIDs[w.ID] = true
+	}
+
+	for _, expectedID := range []string{"webhook-1", "webhook-2", "webhook-3", "webhook-4"} {
+		if !webhookIDs[expectedID] {
+			t.Errorf("expected webhook %q to be loaded", expectedID)
+		}
+	}
+}

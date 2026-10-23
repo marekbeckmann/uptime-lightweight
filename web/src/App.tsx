@@ -31,44 +31,83 @@ export function App() {
     loadData();
 
     // Subscribe to real-time events via Server-Sent Events (SSE)
-    const unsubscribe = subscribeToEvents((heartbeat) => {
-      setData((prev) => {
-        if (!prev) return prev;
+    const unsubscribe = subscribeToEvents(
+      (heartbeat) => {
+        setData((prev) => {
+          if (!prev) return prev;
 
-        const updatedZones = prev.zones.map((zone) => {
-          const updatedEndpoints = zone.endpoints.map((ep) => {
-            if (ep.id !== heartbeat.endpoint_id) return ep;
+          const updatedZones = prev.zones.map((zone) => {
+            const updatedEndpoints = zone.endpoints.map((ep) => {
+              if (ep.id !== heartbeat.endpoint_id) return ep;
 
-            const updatedHeartbeats = [
-              ...ep.heartbeats,
-              {
-                id: Date.now(),
-                timestamp: heartbeat.timestamp,
-                status: heartbeat.status as 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING',
+              const probeStatus = (heartbeat.probe_status || heartbeat.status) as 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING';
+              const endpointStatus = heartbeat.status as 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING';
+
+              const updatedHeartbeats = [
+                ...ep.heartbeats,
+                {
+                  id: Date.now(),
+                  timestamp: heartbeat.timestamp,
+                  status: probeStatus,
+                  latency_ms: heartbeat.latency_ms,
+                  error: heartbeat.error,
+                },
+              ];
+
+              return {
+                ...ep,
+                status: endpointStatus,
                 latency_ms: heartbeat.latency_ms,
-              },
-            ];
+                heartbeats: updatedHeartbeats.slice(-60),
+              };
+            });
 
             return {
-              ...ep,
-              status: heartbeat.status as 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING',
-              latency_ms: heartbeat.latency_ms,
-              heartbeats: updatedHeartbeats.slice(-60),
+              ...zone,
+              endpoints: updatedEndpoints,
             };
           });
 
+          // Recalculate summary status and counts across all zones and endpoints
+          let totalUp = 0;
+          let totalDown = 0;
+          let totalMaint = 0;
+
+          for (const zone of updatedZones) {
+            for (const ep of zone.endpoints) {
+              if (ep.status === 'UP') totalUp++;
+              else if (ep.status === 'DOWN') totalDown++;
+              else if (ep.status === 'MAINTENANCE') totalMaint++;
+            }
+          }
+
+          let sysStatus: 'UP' | 'DOWN' | 'MAINTENANCE' | 'PENDING' = 'UP';
+          if (totalDown > 0) {
+            sysStatus = 'DOWN';
+          } else if (totalMaint > 0 && totalUp === 0) {
+            sysStatus = 'MAINTENANCE';
+          } else if (totalUp === 0 && totalDown === 0) {
+            sysStatus = 'PENDING';
+          }
+
           return {
-            ...zone,
-            endpoints: updatedEndpoints,
+            ...prev,
+            system_status: sysStatus,
+            counts: {
+              ...prev.counts,
+              hosts_up: totalUp,
+              hosts_down: totalDown,
+              in_maintenance: totalMaint,
+            },
+            zones: updatedZones,
           };
         });
-
-        return {
-          ...prev,
-          zones: updatedZones,
-        };
-      });
-    });
+      },
+      () => {
+        // Reload full dashboard data on config reload
+        loadData();
+      }
+    );
 
     return () => {
       unsubscribe();

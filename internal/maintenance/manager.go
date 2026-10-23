@@ -198,6 +198,9 @@ func ParseOneOffDates(om *config.OneOffMaintenance, loc *time.Location) (time.Ti
 		s, err1 := time.Parse(time.RFC3339, om.Start)
 		e, err2 := time.Parse(time.RFC3339, om.End)
 		if err1 == nil && err2 == nil {
+			if e.Before(s) {
+				return time.Time{}, time.Time{}, fmt.Errorf("maintenance end time must be after start time")
+			}
 			return s, e, nil
 		}
 	}
@@ -212,6 +215,10 @@ func ParseOneOffDates(om *config.OneOffMaintenance, loc *time.Location) (time.Ti
 
 	if err1 != nil || err2 != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid one-off maintenance date formats")
+	}
+
+	if e.Before(s) {
+		return time.Time{}, time.Time{}, fmt.Errorf("maintenance end time must be after start time")
 	}
 
 	return s, e, nil

@@ -3,6 +3,7 @@ package prober
 import (
 	"context"
 	"log"
+	"reflect"
 	"sync"
 	"time"
 	"uptime-mon/internal/config"
@@ -11,19 +12,20 @@ import (
 
 // TransitionEvent is emitted when status changes or a probe runs
 type TransitionEvent struct {
-	EndpointID      string
-	DisplayName     string
-	Zone            string
-	Type            string // "DOWN", "UP", "HEARTBEAT", "TLS_EXPIRY"
-	PreviousStatus  string
-	CurrentStatus   string
-	LatencyMS       int
-	Timestamp       time.Time
+	EndpointID       string
+	DisplayName      string
+	Zone             string
+	Type             string // "DOWN", "UP", "HEARTBEAT", "TLS_EXPIRY"
+	PreviousStatus   string
+	CurrentStatus    string
+	ProbeStatus      string
+	LatencyMS        int
+	Timestamp        time.Time
 	DowntimeDuration time.Duration
-	LastUpAt        *time.Time
-	LastError       string
-	TLSExpiryAt     *time.Time
-	WarnDays        int
+	LastUpAt         *time.Time
+	LastError        string
+	TLSExpiryAt      *time.Time
+	WarnDays         int
 }
 
 // MaintenanceChecker interface to avoid circular dependency
@@ -104,14 +106,10 @@ func (s *Scheduler) UpdateConfig(cfg *config.RuntimeConfig) {
 		oldEp, exists := s.endpoints[id]
 		s.endpoints[id] = ep
 
-		// If new or interval changed, recycle probe worker
+		// If new or probe configuration changed, recycle probe worker
 		needsRestart := !exists
-		if exists {
-			oldInterval := s.getInterval(&oldEp)
-			newInterval := s.getInterval(&ep)
-			if oldInterval != newInterval {
-				needsRestart = true
-			}
+		if exists && s.endpointNeedsRestart(&oldEp, &ep) {
+			needsRestart = true
 		}
 
 		if needsRestart {
@@ -120,10 +118,30 @@ func (s *Scheduler) UpdateConfig(cfg *config.RuntimeConfig) {
 			}
 			stopCh := make(chan struct{})
 			s.stopChannels[id] = stopCh
-			go s.runEndpointLoop(ep, stopCh)
+			go s.runEndpointLoop(id, stopCh)
 			log.Printf("[scheduler] started/updated probe loop for %s (type=%s, interval=%v)", id, ep.Type, s.getInterval(&ep))
 		}
 	}
+}
+
+func (s *Scheduler) endpointNeedsRestart(oldEp, newEp *config.Endpoint) bool {
+	if oldEp.Type != newEp.Type ||
+		oldEp.Target != newEp.Target ||
+		oldEp.Hostname != newEp.Hostname ||
+		oldEp.Port != newEp.Port ||
+		oldEp.Method != newEp.Method ||
+		oldEp.Server != newEp.Server ||
+		oldEp.Protocol != newEp.Protocol ||
+		oldEp.QueryType != newEp.QueryType ||
+		oldEp.IgnoreTLSErrors != newEp.IgnoreTLSErrors ||
+		s.getInterval(oldEp) != s.getInterval(newEp) ||
+		s.getTimeout(oldEp) != s.getTimeout(newEp) ||
+		s.getRetries(oldEp) != s.getRetries(newEp) ||
+		!reflect.DeepEqual(oldEp.AcceptedStatusCodes, newEp.AcceptedStatusCodes) ||
+		!reflect.DeepEqual(oldEp.TLSIgnoreWarnDays, newEp.TLSIgnoreWarnDays) {
+		return true
+	}
+	return false
 }
 
 func (s *Scheduler) getInterval(ep *config.Endpoint) time.Duration {
@@ -156,7 +174,14 @@ func (s *Scheduler) getRetries(ep *config.Endpoint) int {
 	return 3
 }
 
-func (s *Scheduler) runEndpointLoop(ep config.Endpoint, stopCh chan struct{}) {
+func (s *Scheduler) runEndpointLoop(endpointID string, stopCh chan struct{}) {
+	s.mu.RLock()
+	ep, ok := s.endpoints[endpointID]
+	s.mu.RUnlock()
+	if !ok {
+		return
+	}
+
 	interval := s.getInterval(&ep)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -171,7 +196,13 @@ func (s *Scheduler) runEndpointLoop(ep config.Endpoint, stopCh chan struct{}) {
 		case <-stopCh:
 			return
 		case <-ticker.C:
-			s.executeProbe(ep)
+			s.mu.RLock()
+			currentEp, currentOk := s.endpoints[endpointID]
+			s.mu.RUnlock()
+			if !currentOk {
+				return
+			}
+			s.executeProbe(currentEp)
 		}
 	}
 }
@@ -293,6 +324,11 @@ func (s *Scheduler) executeProbe(ep config.Endpoint) {
 		}
 	}
 
+	probeStatus := result.Status
+	if inMaint {
+		probeStatus = "MAINTENANCE"
+	}
+
 	// 5. Save updated state and probe history
 	state.Status = effectiveStatus
 	state.LastCheckAt = &now
@@ -302,7 +338,7 @@ func (s *Scheduler) executeProbe(ep config.Endpoint) {
 		log.Printf("[scheduler] error saving state for %s: %v", ep.ID, err)
 	}
 
-	if err := s.db.RecordProbe(ep.ID, effectiveStatus, latencyMS, errMsg, now); err != nil {
+	if err := s.db.RecordProbe(ep.ID, probeStatus, latencyMS, errMsg, now); err != nil {
 		log.Printf("[scheduler] error recording probe history for %s: %v", ep.ID, err)
 	}
 
@@ -313,6 +349,7 @@ func (s *Scheduler) executeProbe(ep config.Endpoint) {
 		Zone:          ep.Zone,
 		Type:          "HEARTBEAT",
 		CurrentStatus: effectiveStatus,
+		ProbeStatus:   probeStatus,
 		LatencyMS:     latencyMS,
 		Timestamp:     now,
 		LastError:     errMsg,

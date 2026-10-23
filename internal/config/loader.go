@@ -181,17 +181,65 @@ func Load(configDir string) (*RuntimeConfig, error) {
 		}
 	}
 
-	// 5. Load alerting from alerting/webhooks.yml
-	alertFile := filepath.Join(configDir, "alerting", "webhooks.yml")
-	if data, err := os.ReadFile(alertFile); err == nil {
-		var a AlertingConfig
-		if err := yaml.Unmarshal(data, &a); err != nil {
-			return nil, fmt.Errorf("error parsing %s: %w", alertFile, err)
+	// 5. Load alerting from alerting/*.yml or alerting/*.yaml (with fallback to alerting/webhooks.yml)
+	alertDir := filepath.Join(configDir, "alerting")
+	if entries, err := os.ReadDir(alertDir); err == nil {
+		var allWebhooks []WebhookTarget
+		for _, entry := range entries {
+			if entry.IsDir() || !isYAML(entry.Name()) {
+				continue
+			}
+			path := filepath.Join(alertDir, entry.Name())
+			whs, err := loadAlertingFile(path)
+			if err != nil {
+				return nil, err
+			}
+			allWebhooks = append(allWebhooks, whs...)
 		}
-		rc.Alerting = a
+		rc.Alerting = AlertingConfig{Webhooks: allWebhooks}
+	} else {
+		alertFile := filepath.Join(configDir, "alerting", "webhooks.yml")
+		if data, err := os.ReadFile(alertFile); err == nil {
+			var a AlertingConfig
+			if err := yaml.Unmarshal(data, &a); err != nil {
+				return nil, fmt.Errorf("error parsing %s: %w", alertFile, err)
+			}
+			rc.Alerting = a
+		}
 	}
 
 	return rc, nil
+}
+
+func loadAlertingFile(path string) ([]WebhookTarget, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+
+	if strings.TrimSpace(string(data)) == "" {
+		return nil, nil
+	}
+
+	// 1. Try AlertingConfig format: { webhooks: [...] }
+	var cfg AlertingConfig
+	if err := yaml.Unmarshal(data, &cfg); err == nil && len(cfg.Webhooks) > 0 {
+		return cfg.Webhooks, nil
+	}
+
+	// 2. Try array format: [ { id: ... } ]
+	var list []WebhookTarget
+	if err := yaml.Unmarshal(data, &list); err == nil && len(list) > 0 && list[0].Type != "" {
+		return list, nil
+	}
+
+	// 3. Try single WebhookTarget: { id: ..., type: ... }
+	var single WebhookTarget
+	if err := yaml.Unmarshal(data, &single); err == nil && single.ID != "" && single.Type != "" {
+		return []WebhookTarget{single}, nil
+	}
+
+	return nil, fmt.Errorf("invalid alerting webhook format in %s", path)
 }
 
 func isYAML(name string) bool {

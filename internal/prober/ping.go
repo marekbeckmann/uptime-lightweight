@@ -32,38 +32,59 @@ func (p *PingProber) Probe(ctx context.Context, endpoint *config.Endpoint, timeo
 	pinger.Count = 1
 	pinger.Timeout = timeout
 
-	// Try privileged first; if that fails to send, retry with unprivileged UDP ping
+	// Try privileged first; if that succeeds and receives packets, return UP
 	pinger.SetPrivileged(true)
 	err = pinger.Run()
-	if err != nil || pinger.Statistics().PacketsRecv == 0 {
-		// Retry with unprivileged socket fallback
-		pingerFallback, errFallback := probing.NewPinger(target)
-		if errFallback == nil {
-			pingerFallback.Count = 1
-			pingerFallback.Timeout = timeout
-			pingerFallback.SetPrivileged(false)
-			if errRun := pingerFallback.Run(); errRun == nil && pingerFallback.Statistics().PacketsRecv > 0 {
-				stats := pingerFallback.Statistics()
-				return ProbeResult{
-					Status:  "UP",
-					Latency: stats.AvgRtt,
-				}
-			}
-		}
-
-		if err == nil {
-			err = fmt.Errorf("0 packets received from %s (packet loss 100%%)", target)
-		}
+	if err == nil && pinger.Statistics().PacketsRecv > 0 {
+		stats := pinger.Statistics()
 		return ProbeResult{
-			Status:  "DOWN",
-			Latency: time.Since(start),
-			Error:   err,
+			Status:  "UP",
+			Latency: stats.AvgRtt,
 		}
 	}
 
-	stats := pinger.Statistics()
+	// Retry with unprivileged socket fallback
+	pingerFallback, errFallback := probing.NewPinger(target)
+	if errFallback == nil {
+		pingerFallback.Count = 1
+		pingerFallback.Timeout = timeout
+		pingerFallback.SetPrivileged(false)
+		errRun := pingerFallback.Run()
+		if errRun == nil && pingerFallback.Statistics().PacketsRecv > 0 {
+			stats := pingerFallback.Statistics()
+			return ProbeResult{
+				Status:  "UP",
+				Latency: stats.AvgRtt,
+			}
+		}
+
+		// Fallback completed with 0 packets received (timeout / packet loss)
+		if errRun == nil && pingerFallback.Statistics().PacketsRecv == 0 {
+			return ProbeResult{
+				Status:  "DOWN",
+				Latency: time.Since(start),
+				Error:   fmt.Errorf("0 packets received from %s (packet loss 100%%)", target),
+			}
+		}
+
+		// Fallback failed with network/run error
+		if errRun != nil {
+			return ProbeResult{
+				Status:  "DOWN",
+				Latency: time.Since(start),
+				Error:   fmt.Errorf("ping probe failed for %s: %w", target, errRun),
+			}
+		}
+	}
+
+	// If unprivileged fallback could not be initialized, report error
+	finalErr := err
+	if finalErr == nil {
+		finalErr = fmt.Errorf("0 packets received from %s (packet loss 100%%)", target)
+	}
 	return ProbeResult{
-		Status:  "UP",
-		Latency: stats.AvgRtt,
+		Status:  "DOWN",
+		Latency: time.Since(start),
+		Error:   finalErr,
 	}
 }

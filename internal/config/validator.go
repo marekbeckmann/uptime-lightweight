@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -98,6 +99,26 @@ func Validate(rc *RuntimeConfig) []string {
 				if _, exists := rc.Endpoints[hID]; !exists {
 					errors = append(errors, fmt.Sprintf("maintenance %q: referenced endpoint %q does not exist", id, hID))
 				}
+			}
+		}
+		if m.Start != "" && m.End != "" {
+			s, err1 := time.Parse(time.RFC3339, m.Start)
+			e, err2 := time.Parse(time.RFC3339, m.End)
+			if err1 != nil || err2 != nil {
+				errors = append(errors, fmt.Sprintf("maintenance %q: invalid start/end RFC3339 format", id))
+			} else if e.Before(s) {
+				errors = append(errors, fmt.Sprintf("maintenance %q: end time must be after start time", id))
+			}
+		} else if m.StartDate != "" && m.EndDate != "" {
+			layout := "2006-01-02 15:04"
+			sStr := fmt.Sprintf("%s %s", strings.TrimSpace(m.StartDate), strings.TrimSpace(m.StartTime))
+			eStr := fmt.Sprintf("%s %s", strings.TrimSpace(m.EndDate), strings.TrimSpace(m.EndTime))
+			s, err1 := time.Parse(layout, sStr)
+			e, err2 := time.Parse(layout, eStr)
+			if err1 != nil || err2 != nil {
+				errors = append(errors, fmt.Sprintf("maintenance %q: invalid start/end date format (must be YYYY-MM-DD HH:MM)", id))
+			} else if e.Before(s) {
+				errors = append(errors, fmt.Sprintf("maintenance %q: end time must be after start time", id))
 			}
 		}
 	}

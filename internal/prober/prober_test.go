@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 	"uptime-mon/internal/config"
@@ -154,5 +155,30 @@ func TestPingProberFallback(t *testing.T) {
 	// Localhost ping might fail if container/OS has no ping privilege; verify graceful error handling
 	if res.Status == "DOWN" && res.Error == nil {
 		t.Errorf("expected error message when ping fails")
+	}
+}
+
+func TestPingProberUnreachableHost(t *testing.T) {
+	p := prober.NewPingProber()
+	// RFC 5737 TEST-NET-1 unreachable IP
+	ep := &config.Endpoint{
+		ID:     "ping-unreachable",
+		Target: "192.0.2.1",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	res := p.Probe(ctx, ep, 500*time.Millisecond)
+	if res.Status != "DOWN" {
+		t.Fatalf("expected status DOWN for unreachable IP, got %s", res.Status)
+	}
+	if res.Error == nil {
+		t.Fatalf("expected error for unreachable IP, got nil")
+	}
+
+	errMsg := res.Error.Error()
+	if strings.Contains(errMsg, "socket: operation not permitted") {
+		t.Errorf("expected clean packet loss or network error, but got privileged socket error: %s", errMsg)
 	}
 }

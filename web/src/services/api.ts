@@ -109,7 +109,8 @@ export async function fetchDashboard(): Promise<DashboardData> {
 }
 
 export function subscribeToEvents(
-  onHeartbeat: (data: { endpoint_id: string; status: string; latency_ms: number; timestamp: string }) => void
+  onHeartbeat: (data: { endpoint_id: string; status: string; probe_status?: string; latency_ms: number; timestamp: string; error?: string }) => void,
+  onSummary?: () => void
 ): () => void {
   const eventSource = new EventSource('/api/v1/events');
 
@@ -121,6 +122,12 @@ export function subscribeToEvents(
       console.error('Error parsing heartbeat event:', err);
     }
   });
+
+  if (onSummary) {
+    eventSource.addEventListener('summary', () => {
+      onSummary();
+    });
+  }
 
   return () => {
     eventSource.close();
