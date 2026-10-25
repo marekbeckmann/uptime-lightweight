@@ -5,6 +5,8 @@
 
 A lightweight, self-hosted, single-binary Uptime Monitoring Platform inspired by Uptime Kuma and Gatus. Configured strictly via declarative YAML files in `./config/` with zero web-based administration endpoints, a dark-mode-only dashboard, deduplicated webhook alerting, scheduled maintenance windows, and a token-secured [Homepage](https://gethomepage.dev) Custom API widget.
 
+![Screenshot](./screenshots/screenshot_01.png)
+
 ---
 
 ## Quickstart
