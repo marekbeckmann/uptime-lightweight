@@ -1,5 +1,6 @@
 {
   "name": "uptime-mon-web",
+  "description": "Dark-mode status dashboard frontend for uptime-mon",
   "private": true,
   "version": "1.0.0",
   "type": "module",
