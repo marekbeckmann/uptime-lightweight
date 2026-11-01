@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Subtiler Top-Down Surface-Verlauf für das Gehäuse -->
+    <linearGradient id="bg-surface" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+
+    <!-- Dezenter Rahmen-Lichtreflex oben -->
+    <linearGradient id="border-stroke" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#27272a" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Smaragd-Verlauf für den aktiven Haupt-Tick -->
+    <linearGradient id="emerald-main" x1="0" y1="120" x2="0" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Äußeres App-Gehäuse -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg-surface)" stroke="url(#border-stroke)" stroke-width="8" />
+
+  <!-- Subtiles technisches Referenz-Raster im Hintergrund -->
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#27272a" stroke-width="4" stroke-dasharray="10 10" opacity="0.45" />
+
+  <!-- Heartbeat-Tick 1 (Historie - gedämpft) -->
+  <rect x="124" y="176" width="56" height="216" rx="18" fill="#10b981" fill-opacity="0.28" />
+
+  <!-- Heartbeat-Tick 2 (Übergang / Tal - bildet mit Tick 1 & 3 ein abstraktes 'U') -->
+  <rect x="228" y="248" width="56" height="144" rx="18" fill="#10b981" fill-opacity="0.60" />
+
+  <!-- Heartbeat-Tick 3 (Aktueller Check - Volle Signalstärke) -->
+  <rect x="332" y="200" width="56" height="192" rx="18" fill="url(#emerald-main)" />
+
+  <!-- Live Status-Punkt (UP) über dem letzten Tick -->
+  <circle cx="360" cy="136" r="28" fill="#10b981" />
+  <circle cx="360" cy="136" r="40" stroke="#10b981" stroke-width="4" stroke-opacity="0.3" />
+</svg>

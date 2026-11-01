@@ -33,10 +33,17 @@ export const Header: React.FC<HeaderProps> = ({ data }) => {
     <header className="border-b border-cardBorder bg-card/60 backdrop-blur-md px-6 py-6 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center p-2 shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
             {branding.icon && !iconError ? (
               <img
                 src={branding.icon}
+                alt={branding.title}
+                className="w-full h-full object-contain"
+                onError={() => setIconError(true)}
+              />
+            ) : !iconError ? (
+              <img
+                src="/utpime-lightweight-logo.svg"
                 alt={branding.title}
                 className="w-full h-full object-contain"
                 onError={() => setIconError(true)}
